@@ -1,72 +1,77 @@
-import { CountdownTimer, Separator } from "./style"
-import { useEffect, useContext } from "react"
-import { differenceInSeconds } from "date-fns";
-import { CyclesContext } from "../..";
+import { differenceInSeconds } from 'date-fns'
+import { useContext, useEffect } from 'react'
+import { CyclesContext } from '../../../../context/cyclesContext'
+import {
+  CountdownContainer,
+  Separator,
+} from '../../Components/Countdown/styles'
 
+// ------------------------------------------------------------------//
 
-export function Countdown(){
-
-  // -- USANDO CONTEXTO -- //
-  const { 
-    activeCycle, 
-    activeIdCycle,
-    finishedCycleFunctionSending,
-    secondsPassed,
-    sendSetSecondPassed
+export function Countdown() {
+  const {
+    activeCycle,
+    activeCycleId,
+    markCurrentCycleAsFinished,
+    amountSecondsPassed,
+    setSecondsPassed,
   } = useContext(CyclesContext)
 
+  const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0
 
+  useEffect(() => {
+    let interval: number
 
-  // -- TRASFORMANDO NÚMEROS DO TIMER -- //
-  const totalSeconds = activeCycle ?  activeCycle.minutes * 60 : 0
+    if (activeCycle) {
+      interval = setInterval(() => {
+        const secondsDifference = differenceInSeconds(
+          new Date(),
+          activeCycle.startDate,
+        )
 
-  const currentSeconds = activeCycle ? totalSeconds - secondsPassed : 0
+        if (secondsDifference >= totalSeconds) {
+          markCurrentCycleAsFinished()
+
+          setSecondsPassed(totalSeconds)
+          clearInterval(interval)
+        } else {
+          setSecondsPassed(secondsDifference)
+        }
+      }, 1000)
+    }
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [
+    activeCycle,
+    totalSeconds,
+    activeCycleId,
+    setSecondsPassed,
+    markCurrentCycleAsFinished,
+  ])
+
+  const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0
 
   const minutesAmount = Math.floor(currentSeconds / 60)
   const secondsAmount = currentSeconds % 60
 
-  const minutesNumber = String(minutesAmount).padStart(2, '0')
-  const secondsNumber = String(secondsAmount).padStart(2, '0')
+  const minutes = String(minutesAmount).padStart(2, '0')
+  const seconds = String(secondsAmount).padStart(2, '0')
 
-
-    // -- LIDANDO COM A PASSAGEM DE TEMPO DO TIMER -- //
   useEffect(() => {
-    let interval: number;
-    if(activeCycle){
-       interval = setInterval(() => {
-
-        const secondsDifference = differenceInSeconds(
-          new Date(), 
-          activeCycle.startDate
-        )
-
-        if(secondsDifference >= totalSeconds){
-          finishedCycleFunctionSending()
-          sendSetSecondPassed(totalSeconds)            
-          clearInterval(interval)
-        } else {
-          sendSetSecondPassed(secondsDifference)
-        }
-        
-      }, 1000)
+    if (activeCycle) {
+      document.title = `${minutes}:${seconds}`
     }
-    return () => {
-      clearInterval(interval)
-    }
-  },[activeCycle, 
-    totalSeconds, 
-    activeIdCycle, 
-    finishedCycleFunctionSending, 
-    sendSetSecondPassed])
+  }, [minutes, seconds, activeCycle])
 
-  return(
-    <CountdownTimer>
-      <span>{minutesNumber[0]}</span>
-      <span>{minutesNumber[1]}</span>
+  return (
+    <CountdownContainer>
+      <span>{minutes[0]}</span>
+      <span>{minutes[1]}</span>
       <Separator>:</Separator>
-      <span>{secondsNumber[0]}</span>
-      <span>{secondsNumber[1]}</span>
-    </CountdownTimer>
+      <span>{seconds[0]}</span>
+      <span>{seconds[1]}</span>
+    </CountdownContainer>
   )
-
 }
